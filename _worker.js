@@ -207,7 +207,23 @@ export default {
 				if (!subConverterResponse.ok) return new Response(base64Data, { headers: responseHeaders });
 				let subConverterContent = await subConverterResponse.text();
 				if (订阅格式 == 'clash') subConverterContent = await clashFix(subConverterContent);
-				// 只有非浏览器订阅才会返回SUBNAME
+				if (订阅格式 == 'singbox') {
+                // Parse and modify SingBox JSON to set insecure to false
+                 try {
+                      const config = JSON.parse(subConverterContent);
+                         if (config.outbounds) {
+                         config.outbounds.forEach(outbound => {
+                         if (outbound.tls) {
+                        outbound.tls.insecure = false;
+                            }
+                        });
+                     }
+                    subConverterContent = JSON.stringify(config, null, 2);
+                    } catch (e) {
+                    console.log('Failed to modify SingBox config:', e);
+                        }
+                    }
+				
 				if (!userAgent.includes('mozilla')) responseHeaders["Content-Disposition"] = `attachment; filename*=utf-8''${encodeURIComponent(FileName)}`;
 				return new Response(subConverterContent, { headers: responseHeaders });
 			} catch (error) {
